@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0">
+    <title>Torito 5</title>
+    <link rel="stylesheet" type="text/css" href="minstyle.io.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h3 class="ms_col ms_col--11-of-12 ms_col--s-12-of-12">Torito 5</h3>
+        <hr>
+
+        <div id="alert" class="alert ms_col ms_col--1-of-2 ms_col--centered" style="display:none">
+            <div class="alert-content">
+                <svg height="150" viewBox="0 0 512 512" width="150" xmlns="http://www.w3.org/2000/svg"><path d="m216 424c0 5.5 4.5 10 10 10h60c5.5 0 10-4.5 10-10v-60c0-5.5-4.5-10-10-10h-60c-5.5 0-10 4.5-10 10zm20-50h40v40h-40z"/><path d="m226 314h60c5.5 0 10-4.5 10-10v-150c0-5.5-4.5-10-10-10h-60c-5.5 0-10 4.5-10 10v150c0 5.5 4.5 10 10 10zm10-150h40v130h-40z"/><circle cx="256" cy="484" r="10"/><path d="m304.4 46.8c-9.6-17.8-28.2-28.8-48.4-28.8s-38.8 11.1-48.4 28.8l-201 366c-4.3 8-6.6 17-6.6 26.2 0 30.3 24.7 55 55 55h156c5.5 0 10-4.5 10-10s-4.5-10-10-10h-156c-19.3 0-35-15.7-35-35 0-5.8 1.5-11.6 4.2-16.6l201-366.1c6.1-11.3 17.9-18.4 30.8-18.4s24.7 7 30.8 18.4l201 366c2.7 5.1 4.2 10.8 4.2 16.6 0 19.3-15.7 35-35 35h-156c-5.5 0-10 4.5-10 10s4.5 10 10 10h156c30.3 0 55-24.7 55-55 0-9.1-2.3-18.2-6.6-26.2z"/></svg>
+                <div class="alert-title">¡Golpe activado!</div>
+                <div class="alert-text">El vehículo se ha dado un golpe de más de <strong id="threshold_acceleration">-- g</strong></div>
+                <button class="ms-btn ms-danger-inverted" onclick="resetHit()">Resetear</button>
+            </div>
+        </div>
+
+        <div class="metric blue ms_col ms_col--1-of-3 ms_col--push-1-of-12">
+            <div class="metric-title">Altura</div>
+            <div class="metric-data"><span id="height" class="data">--</span> m</div>
+            <div id="location" class="metric-sub-text">--</div>
+        </div>
+        <div class="metric ms_col ms_col--1-of-3 ms_col--push-2-of-12">
+            <div class="metric-title">Acceleración</div>
+            <div class="metric-data"><span id="accel" class="data">--</span> g</div>
+        </div>
+
+        <table id="historic" class="ms-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Golpe</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+    
+    <hr>
+
+    <footer>
+        <div class="container">
+            <a href="config.html"><img class="ms_col ms_col--2-of-12 ms_col--s-3-of-4" src="720tec.png"></a>
+            <div class="ms_col ms_col--9-of-12">
+               <p id="version"><strong>Versión</strong>: <span id="version_number">0.3 <em>beta</em> (oct-2020)</span></p>
+               <p>Sistema desarrollado por <a href="https://www.720tec.es/">720tec</a></p>
+            </div>
+         </div>   
+    </footer>
+
+    <script src="jquery.min.js"></script>
+    <script>
+        let threshold_height = 1;
+        let threshold_accel = 1;
+        let hitted = false;
+        let gotInitial = false;
+        let blocked_accel = false;
+
+        let socket = new WebSocket("ws://192.168.4.1");
+        socket.onopen = function(e) {
+            console.log("WS open");
+        };
+
+        socket.onmessage = function(e) {
+            let msg = JSON.parse(e.data);
+            switch (msg.type) {
+                case "initial":
+                    console.log(msg);
+                    hitted = msg.data.hitted;
+                    //threshold_accel =  Math.sqrt(msg.data.threshold_accel);
+                    threshold_accel =  msg.data.threshold_accel;
+                    threshold_height = msg.data.threshold_height / 100;
+
+                    $("#threshold_acceleration").text(threshold_accel + " g");
+
+                    if (hitted) {
+                        $("#alert").show();
+                    } else {
+                        $("#alert").hide();
+                    }
+
+                    for  (let i = 0; i < msg.data.historic.length; i++) {
+                        console.log("added hit");
+                        $("#historic").find("tbody")
+                          .append($("<tr>")
+                            .append($("<td>")
+                                .text(msg.data.historic[i].date)
+                            ).append($("<td>")
+                                .text(msg.data.historic[i].accel.toFixed(2) + " g")    
+                            )
+                          );
+                    }
+
+                    let rows = $("#historic tbody tr").get();
+                    rows.sort(function(a,b) {
+                        let ka = $(a).find("td:eq(0)").text();
+                        let kb = $(b).find("td:eq(0)").text();
+                        if (ka < kb) return 1;
+                        if (ka > kb) return -1;
+                        return 0;
+                    });
+
+                    $.each(rows, function(index, row) {
+                        $("#historic").children("tbody").append(row);
+                    })
+
+                    console.log("Thresholds are: " + threshold_height + " m and " + threshold_accel + " g");
+                    gotInitial = true;
+                    break;
+                case "data":
+                    if (!gotInitial) { break; } 
+                    let height = msg.data.height / 100;
+                    let accel = Math.sqrt(msg.data.accel);
+                   $("#height").text(height);
+                    if (height > threshold_height) {
+                        $("#location").text("Exterior");
+                    } else {
+                        $("#location").text("Interior");
+                    }
+                    if (accel >= threshold_accel) {
+                        console.log("Accel threshold exceed", msg.data.accel, threshold_accel);
+                        blocked_accel = true;
+                        $("#accel").text(accel.toFixed(2));
+                        $("#alert").show();
+                        unblock_accel();
+                    } else {
+                        if (!blocked_accel) {
+                            $("#accel").text(accel.toFixed(2));
+                        }
+                    }
+                    break;
+                case "hit":
+                    console.log("hit")
+                    $("#historic").find("tbody").append($("<tr>")
+                        .append($("<td>")
+                            .text(msg.data.date)
+                        ).append($("<td>")
+                            .text(msg.data.accel.toFixed(2) + " g")    
+                        )
+                    );
+
+                    let rowss = $("#historic tbody tr").get();
+                    rowss.sort(function(a,b) {
+                        let ka = $(a).find("td:eq(0)").text();
+                        let kb = $(b).find("td:eq(0)").text();
+                        if (ka < kb) return 1;
+                        if (ka > kb) return -1;
+                        return 0;
+                    });
+
+                    $.each(rowss, function(index, row) {
+                        $("#historic").children("tbody").append(row);
+                    })
+
+                    if ($("#historic tbody tr").length > 20) {
+                        $("#historic > tbody > tr:last").remove();
+                    }
+                    break;
+            }
+        };
+
+        socket.onclose = function(e) {
+            if (e.wasClean) { console.log("ws closed"); }
+            else { console.log("conn died"); }
+        };
+
+        socket.onerror = function(e) {
+            console.log("ws err", e);
+        };
+
+        function resetHit() {
+            socket.send("resetHit");
+            $("#historic").find("tbody").empty();
+            $("#alert").hide();
+        }
+
+        function unblock_accel() {
+            setTimeout(function() { blocked_accel = false; }, 5000);
+        }
+    </script>
+</body>
+</html>

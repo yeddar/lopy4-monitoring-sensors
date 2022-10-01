@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0">
+    <title>Torito 5</title>
+    <link rel="stylesheet" type="text/css" href="minstyle.io.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="ms_col ms_col--12-of-12">Gestión del dispositivo</h1>
+        <h3 class="ms_col ms_col--11-of-12 ms_col--s-12-of-12">Torito 5</h3>
+        <hr>
+        <div class="ms-form-group">
+            <label for="accel">Acceleración mínima para golpe:</label>
+            <select id="accel">
+            </select>
+        </div>
+        <div class="ms-form-group">
+            <label for="height">Altura para considerar interior:</label>
+            <select id="height">
+            </select>
+        </div>
+        <button id="send" class="ms-btn">Enviar</button>
+    </div>
+    <footer>
+        <div class="container">
+            <a href="/"><img class="ms_col ms_col--2-of-12 ms_col--s-3-of-4" src="720tec.png"></a>
+            <div class="ms_col ms_col--9-of-12">
+               <p id="version"><strong>Versión</strong>: <span id="version_number">0.3 <em>beta</em> (oct-2020)</span></p>
+               <p>Sistema desarrollado por <a href="https://www.720tec.es/">720tec</a></p>
+            </div>
+         </div>   
+    </footer>
+
+    <script src="jquery.min.js"></script>
+    <script>
+        let ready = false;
+        window.onload = function() {
+            // Aceleración
+            for (let i = 0.5; i <= 20; i = i + 0.5) {
+                $("#accel").append($("<option/>").attr({ "value": i}).text(i + " g"));
+            }
+            // Altura
+            for (let i = 0.5; i <= 12; i = i + 0.5) {
+                $("#height").append($("<option/>").attr({ "value": i}).text(i + " m"));
+            }
+
+        }
+
+        let socket = new WebSocket("ws://192.168.4.1");
+        socket.onopen = function(e) {
+            console.log("WS open");
+        };
+
+        socket.onmessage = function(e) {
+            let msg = JSON.parse(e.data);
+            switch (msg.type) {
+                case "initial":
+                    console.log(msg);
+                    hitted = msg.data.hitted;
+                    threshold_accel =  Math.round(Math.sqrt(msg.data.threshold_accel));
+                    threshold_height = msg.data.threshold_height / 100;
+
+                    console.log("Thresholds are: " + threshold_height + " m and " + threshold_accel + " g");
+                    $("#accel").val(threshold_accel);                    
+                    $("#height").val(threshold_height);
+                    ready = true;
+                   break;
+            }
+        }
+
+        $("#send").click(sendChange)
+        
+
+        function sendChange() {
+            if (!ready) { return; }
+            let obj = {
+                "height": $("#height option:selected").val(),
+                "accel": $("#accel option:selected").val()
+            };
+            console.log("onchange " +obj);
+            socket.send(JSON.stringify({
+                    "type": "config",
+                    "data": obj
+            }));
+        }
+    </script>
+</body>
+</html>

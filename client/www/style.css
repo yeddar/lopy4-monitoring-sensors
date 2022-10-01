@@ -1,0 +1,79 @@
+em {
+    font-style: italic;
+}
+
+.metric {
+    margin-top: 2em;
+    margin-bottom: 2em;
+    color: white;
+    padding: 1em;
+    background-color: #90A4AE;
+    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+}
+
+.metric.blue {
+    background-color: #1E88E5;
+}
+
+.metric.green {
+    background-color: #8BC34A;
+}
+
+.metric.red {
+    background-color: #d32f2f;
+}
+
+.metric-title {
+    font-size: 150%;
+    font-style: italic;
+}
+
+.metric-data {
+    margin-top: 1em;
+    margin-bottom: 1em;
+    text-align: center;
+    font-size: 3em;
+}
+
+.metric-data .data {
+    font-weight: bold;
+}
+
+.metric .metric-sub-text {
+    margin-top: -1.5rem;
+    text-align: center;
+    font-style: italic;
+    font-size: 110%;
+}
+
+.alert {
+    margin-top: 2em;
+    margin-bottom: 2em;
+    color: white;
+    padding: 1em;
+    background-color: #d32f2f;
+    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+}
+
+.alert .alert-content {
+    text-align: center;
+}
+
+.alert svg {
+    fill: white;
+}
+
+.alert .alert-title {
+    margin: 1em auto;
+    font-size: x-large;
+    font-weight: bold;
+}
+
+.alert .alert-text {
+    margin: 0.2em auto;
+}
+
+.ms-danger-inverted {
+    color: #d32f2f;
+    background-color: white;
+}
